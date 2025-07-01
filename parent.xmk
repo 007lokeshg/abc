@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>{{orgid}}</groupId>
+    <artifactId>bom</artifactId>
+    <version>0.0.12</version>
+  </parent>
+ 
+  <groupId>{{orgid}}</groupId>
+  <artifactId>parent-pom</artifactId>
+  <version>0.0.31</version>
+  <packaging>pom</packaging>
+  <!-- IMPORTANT: Due to a limitation in MUnit, this file must be installed into the local Maven repo after every change: -->
+  <!-- mvn -f pom.xml install:install-file -Dfile=pom.xml -DpomFile=pom.xml -->
+  <!-- Exchange demands a name for deployment -->
+  <name>drreddys-parent-pom</name>
+  <!-- Exchange demands a name for deployment -->
+  <properties>
+    <!-- Not explicitly used but needed for deployment to Exchange, otherwise Exchange cannot determine the asset type -->
+    <type>custom</type>
+    <!-- the layers of API-led connectivity, used for assigning layer in Visualizer: must be assigned to api.layer property -->
+    <api.layer.eapi>Experience</api.layer.eapi>
+    <api.layer.papi>Process</api.layer.papi>
+    <api.layer.sapi>System</api.layer.sapi>
+    <api.layer.backend>Backend</api.layer.backend>
+    <api.layer.none>None</api.layer.none>
+    <!-- for automated deployments -->
+    <deployment.env>set with -Ddeployment.env=...</deployment.env>
+    <deployment.prefix>drl-</deployment.prefix>
+    <deployment.suffix>-${deployment.env}</deployment.suffix>
+    <cloudhub.deployment.name>${deployment.prefix}${project.artifactId}${deployment.suffix}</cloudhub.deployment.name>
+    <arm.deployment.name>${project.artifactId}</arm.deployment.name>
+    <!-- 2 minutes per attempt (to check if app has started) times 10 attempts (10 is hard-coded) = 2*60*1000*10 = 1200000 -->
+    <deployment.timeoutMillis>1200000</deployment.timeoutMillis>
+    <!-- for automated deployments via ARM -->
+    <ap.uri>https://anypoint.mulesoft.com</ap.uri>
+    <!-- master\subOrg1\subOrg2 -->
+    <ap.businessGroup/>
+    <!-- requires AP environments to have the same name as the env property value in Mule apps (which determines the property files to load) -->
+    <ap.environment>${deployment.env}</ap.environment>
+    <!-- for automated deployments to CH -->
+    <!-- set mule.encryption.key for decrypting secure (encryped) properties files (but don't set it here!) -->
+    <sonar.sources>src/main</sonar.sources>
+    <sonar.tests>src/test</sonar.tests>
+    <sonar.testExecutionReportPaths>target/sonar-reports/MULE_EE.${app.runtime}.xml</sonar.testExecutionReportPaths>
+  </properties>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <!-- and must exclude some file types from filtering in maven-resources-plugin config below -->
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+        <!-- and must exclude some file types from filtering in maven-resources-plugin config below -->
+      </testResource>
+      <testResource>
+        <directory>src/test/funmon</directory>
+        <filtering>true</filtering>
+        <targetPath>funmon</targetPath>
+      </testResource>
+    </testResources>
+    <pluginManagement>
+      <plugins>
+        <!-- Plugin to compile Java classes -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <compilerArgs>
+              <args>-parameters</args>
+            </compilerArgs>
+            <source>${maven.compiler.source}</source>
+            <target>${maven.compiler.target}</target>
+            <testSource>${maven.compiler.testSource}</testSource>
+            <testTarget>${maven.compiler.testTarget}</testTarget>
+          </configuration>
+        </plugin>
+        <!-- allow resource files to contain references to Maven properties like ${prop.name} -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <configuration>
+            <nonFilteredFileExtensions>
+              <!-- exclude all binary files from filtering! -->
+              <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+              <nonFilteredFileExtension>crt</nonFilteredFileExtension>
+              <nonFilteredFileExtension>pem</nonFilteredFileExtension>
+              <nonFilteredFileExtension>pfx</nonFilteredFileExtension>
+              <nonFilteredFileExtension>cer</nonFilteredFileExtension>
+              <nonFilteredFileExtension>xlsx</nonFilteredFileExtension>
+            </nonFilteredFileExtensions>
+          </configuration>
+        </plugin>
+        <!-- to be able to build and package Mule apps and to deploy Mule apps to CH -->
+        <plugin>
+          <groupId>org.mule.tools.maven</groupId>
+          <artifactId>mule-maven-plugin</artifactId>
+          <extensions>true</extensions>
+          <configuration>
+            <cloudhub2Deployment>
+        <uri>${ap.uri}</uri>
+        <provider>MC</provider>
+        <environment>${ap.environment}</environment>
+        <target>${target}</target>
+        <muleVersion>${app.runtime.semver}</muleVersion>
+        <releaseChannel>LTS</releaseChannel>
+        <javaVersion>${java.version}</javaVersion>
+        <server>anypoint-exchange-v3-drreddys</server>
+        <applicationName>${cloudhub.deployment.name}</applicationName>
+        <businessGroupId>${drl.ap.orgid}</businessGroupId>
+        <replicas>1</replicas>
+        <vCores>0.1</vCores>
+        <properties>
+                <anypoint.platform.config.analytics.agent.enabled>true</anypoint.platform.config.analytics.agent.enabled>
+                <anypoint.platform.visualizer.displayName>${project.artifactId}</anypoint.platform.visualizer.displayName>
+                <!-- api.layer must be set in every concrete Mule app! -->
+                <anypoint.platform.visualizer.layer>${api.layer}</anypoint.platform.visualizer.layer>
+                <!-- concrete Mule apps can provide their own props which will be merged with the props given here -->
+        <!-- set with -Ddeployment.env= -->
+        <deployment.env>${deployment.env}</deployment.env>
+              </properties>
+        <secureProperties>
+        <!-- set with -Dmule.encryption.key= -->
+        <mule.encryption.key>${mule.encryption.key}</mule.encryption.key>
+        <!-- set with -Danypoint.platform.client_id= -->
+        <anypoint.platform.client_id>${anypoint.platform.client_id}</anypoint.platform.client_id>
+        <!-- set with -Danypoint.platform.client_secret= -->
+        <anypoint.platform.client_secret>${anypoint.platform.client_secret}</anypoint.platform.client_secret>
+        </secureProperties>
+      </cloudhub2Deployment>
+          </configuration>
+        </plugin>
+        <!-- to be able to run MUnit tests -->
+        <plugin>
+          <groupId>com.mulesoft.munit.tools</groupId>
+          <artifactId>munit-maven-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>test</id>
+              <phase>test</phase>
+              <goals>
+                <goal>test</goal>
+                <goal>coverage-report</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <runtimeVersion>${app.runtime.semver}</runtimeVersion>
+            <runtimeProduct>MULE_EE</runtimeProduct>
+            <environmentVariables>
+              <!-- this implies that all tests run in the same Maven build must use the same mule.encryption.key -->
+              <deployment.env>${deployment.env}</deployment.env>
+              <mule.encryption.key>${mule.encryption.key}</mule.encryption.key>
+            </environmentVariables>
+            <dynamicPorts>
+              <dynamicPort>http.port</dynamicPort>
+            </dynamicPorts>
+            <coverage>
+              <runCoverage>true</runCoverage>
+              <failBuild>true</failBuild>
+              <!-- TODO: set achievable coverage limits: -->
+              <requiredApplicationCoverage>80</requiredApplicationCoverage>
+              <ignoreFiles>
+                <ignoreFile>error-common.xml</ignoreFile>
+                <ignoreFile>health-common.xml</ignoreFile>
+                <ignoreFile>utilities-common.xml</ignoreFile>
+              </ignoreFiles>
+              <formats>
+                <format>console</format>
+                <format>html</format>
+                <format>json</format>
+                <format>sonar</format>
+              </formats>
+            </coverage>
+            <runtimeVersion>${app.runtime}</runtimeVersion>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.7.1</version>
+          <configuration>
+            <appendAssemblyId>true</appendAssemblyId>
+          </configuration>
+          <executions>
+            <execution>
+              <id>create-distribution</id>
+              <phase>package</phase>
+              <goals>
+                <goal>single</goal>
+              </goals>
+              <configuration>
+                <descriptors>
+                  <descriptor>/src/main/resources/docs-assembly/assembly.xml</descriptor>
+                </descriptors>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  <profiles>
+    <profile>
+      <id>sonar</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>${sonar.plugin.version}</version>
+            <executions>
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sonar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- following above examples to segregate xml-format-maven-plugin into profile so that Studio does not get confused -->
+      <id>format</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>au.com.acegi</groupId>
+            <artifactId>xml-format-maven-plugin</artifactId>
+            <configuration>
+              <attributeQuoteChar>"</attributeQuoteChar>
+              <!-- it follows from the above that DW expressions within XML attributes must only use ' (single quotes)! -->
+              <encoding>UTF-8</encoding>
+              <indentSize>2</indentSize>
+              <lineEnding>LF</lineEnding>
+              <newLineAfterDeclaration>false</newLineAfterDeclaration>
+              <newLineAfterNTags>1</newLineAfterNTags>
+              <newlines>true</newlines>
+              <trimText>true</trimText>
+            </configuration>
+            <executions>
+              <execution>
+                <id>xml-format</id>
+                <goals>
+                  <goal>xml-format</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+  <!-- don't define any dependencies -->
+  <dependencies/>
+</project>
