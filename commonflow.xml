@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+ 
+	<parent>
+		<groupId>{{orgid}}</groupId>
+		<artifactId>lg-parent-pom</artifactId>
+		<version>0.0.31</version>
+	</parent>
+ 
+	<groupId>{{orgid}}</groupId>
+	<artifactId>lg-common-flows</artifactId>
+	<version>0.0.41</version>
+	<packaging>mule-application</packaging>
+ 
+	<name>drreddys-common-flows</name>
+ 
+	<properties/>
+ 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.mule.tools.maven</groupId>
+				<artifactId>mule-maven-plugin</artifactId>
+				<configuration>
+					<classifier>mule-plugin</classifier>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+ 
+	<dependencies>
+		<!-- START: Used in All APIs -->
+		<dependency>
+			<groupId>org.mule.connectors</groupId>
+			<artifactId>mule-http-connector</artifactId>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.mule.modules</groupId>
+			<artifactId>mule-apikit-module</artifactId>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.modules</groupId>
+			<artifactId>mule-secure-configuration-property-module</artifactId>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<!-- END: Used in All APIs -->
+		<!-- START: Used for setting MDC Log Pattern -->
+		<dependency>
+			<groupId>org.mule.modules</groupId>
+			<artifactId>mule-tracing-module</artifactId>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<!-- END: Used for setting MDC Log Pattern -->
+		<dependency>
+			<groupId>${ap.orgid}</groupId>
+			<artifactId>drreddys-json-logger</artifactId>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+		<dependency>
+			<groupId>com.mulesoft.connectors</groupId>
+			<artifactId>mule-amazon-s3-connector</artifactId>
+			<version>6.3.16</version>
+			<classifier>mule-plugin</classifier>
+		</dependency>
+	</dependencies>
+ 
+</project>
+ 
